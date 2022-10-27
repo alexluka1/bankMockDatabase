@@ -1,0 +1,62 @@
+CREATE DATABASE IF NOT EXISTS bank; /* Creates the database if it does not already exist */
+USE bank;
+
+
+/*
+Address is split into NoStreetName and Postcode as these are the only 2 parts of an address needed to find the exact place
+Name has been split into FirstName and LastName to keep database normalised
+*/
+CREATE TABLE IF NOT EXISTS Customers (
+	CustomerID int NOT NULL AUTO_INCREMENT,
+	FirstName varchar(255) NOT NULL,
+	LastName varchar(255) NOT NULL,
+	PhoneNumber varchar(255) UNIQUE NOT NULL,
+    NoStreetName varchar(255) NOT NULL,			
+	Postcode varchar(255) NOT NULL,
+    DOB date NOT NULL,
+	 PRIMARY KEY (CustomerID)
+);
+
+
+/*
+Foreign key is the CustomerID as it links the account to the respective customer
+AccountNumber set as primary key as it has to be UNIQUE
+*/
+CREATE TABLE IF NOT EXISTS Accounts (
+	AccountNumber int NOT NULL,
+	SortCode int NOT NULL,
+    OpenBalance double(255,2) NOT NULL CHECK (OpenBalance>50),
+	CustomerID int NOT NULL,
+	PRIMARY KEY (AccountNumber),
+	FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+);
+
+
+/*
+Foreign key is AccountNumber as an acconut has to be linked to a loan in order for payments to be monitered
+
+*/
+CREATE TABLE IF NOT EXISTS Loans(
+    LoanID int NOT NULL AUTO_INCREMENT,
+    StartDate date NOT NULL,
+    NumPayments int NOT NULL,
+    Rate double(255,2) NOT NULL,
+	AccountNumber int NOT NULL,
+	PRIMARY KEY (LoanID), 
+	FOREIGN KEY (AccountNumber) REFERENCES Accounts(AccountNumber)
+);
+
+
+/*
+Foreign key is AccountNumber as an account has to be linked to a transaction
+To further improve the database a link between Transactions and Loans could be made, for transactions that are laon payments
+*/
+CREATE TABLE IF NOT EXISTS Transactions (
+	TransactionID int NOT NULL AUTO_INCREMENT,
+    Amount double(255,2) NOT NULL,
+    Date datetime NOT NULL,
+    AccountNumber int NOT NULL,
+    PRIMARY KEY (TransactionID),
+    FOREIGN KEY (AccountNumber) REFERENCES Accounts(AccountNumber)
+);
+

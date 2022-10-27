@@ -1,0 +1,267 @@
+/*	This is all workings for the databse queries.
+Further below is where the complete queries are	
+
+DROP DATABASE databasename;
+*/
+
+/* This is how to comment
+Below is an idea of how to do the current account balance
+*/
+
+
+/*
+SELECT Accounts.OpeningBalance + SUM(Transactions.Amount) AS CurrentBalance;
+
+
+
+USE bank;
+ALTER TABLE Customers MODIFY COLUMN CustomerID int NOT NULL AUTO_INCREMENT; 
+
+USE bank;
+SELECT LastName, DOB FROM Customers WHERE DOB < '2000-01-01';
+
+
+SELECT SUM(Amount) FROM Transactions WHERE AccountNumber = 31510604;
+
+
+
+	This will get sum of all the transactions	
+SELECT SUM(Amount) AS TotalOutstandings FROM Tranactions;
+	Will get sum of the opening balances. Add these two together to get the total outstandings	
+SELECT SUM(OpeningBalance) FROM Accounts;
+
+*/
+
+
+
+/*	Working Solutions	*/
+/*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+/*	4.4 - calculates total Outstandings	*/
+USE bank;
+DELIMITER //
+
+CREATE PROCEDURE TotalOut()
+BEGIN		/* gets the SUM of all transactions */			/* gets the SUM of all open balances */
+SELECT ((SELECT SUM(Transactions.Amount) FROM Transactions) + (SELECT SUM(Accounts.OpenBalance) FROM Accounts)) AS TotalOutstandings;
+END//
+
+
+DELIMITER ;
+
+	/* gets the SUM of all transactions */		/* gets the SUM of all open balances */
+SELECT ((SELECT SUM(Transactions.Amount) FROM Transactions) + (SELECT SUM(Accounts.OpenBalance) FROM Accounts)) AS TotalOutstandings;
+
+
+/*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+
+
+
+
+
+/*	Calculates each accounts balance	*/
+USE bank;
+DELIMITER //
+
+CREATE PROCEDURE CalcBalance()
+BEGIN
+SELECT SUM(transactions.Amount) AS Balance FROM transactions GROUP BY transactions.AccountNumber;
+END//
+
+
+DELIMITER ;
+
+
+
+
+
+
+
+
+
+/*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+/*	4.3 - list customers with balance greater than 5000	*/
+USE bank;
+DELIMITER //
+
+CREATE PROCEDURE CalcOver()
+BEGIN		/* selects details */
+SELECT customers.CustomerID, customers.FirstName, customers.LastName, accounts.AccountNumber, (SUM(transactions.Amount)+accounts.OpenBalance) AS Balance FROM accounts 
+INNER JOIN transactions ON accounts.AccountNumber = transactions.AccountNumber		/* joins transaction table in order to get transaction details for calculations */
+INNER JOIN customers ON accounts.CustomerID = customers.CustomerID			/* joins customer table in order to get customer details */
+/* where accounts opening balance + SUM transactions > 5000 */
+WHERE 5000 - accounts.OpenBalance < ALL (SELECT SUM(transactions.Amount) FROM transactions GROUP BY transactions.AccountNumber)
+GROUP BY accounts.AccountNumber; /* group by the account so that SUM is done by accounts rather than overall */
+END//
+
+
+DELIMITER ;
+
+
+
+USE bank;
+DELIMITER //
+
+CREATE PROCEDURE CalcOverX(IN amount FLOAT(2))
+BEGIN		/* selects details */
+SELECT customers.CustomerID, customers.FirstName, customers.LastName, accounts.AccountNumber, (SUM(transactions.Amount)+accounts.OpenBalance) AS Balance FROM accounts 
+INNER JOIN transactions ON accounts.AccountNumber = transactions.AccountNumber		/* joins transaction table in order to get transaction details for calculations */
+INNER JOIN customers ON accounts.CustomerID = customers.CustomerID			/* joins customer table in order to get customer details */
+/* where accounts opening balance + SUM transactions > amount */
+WHERE amount - accounts.OpenBalance < ALL (SELECT SUM(transactions.Amount) FROM transactions GROUP BY transactions.AccountNumber)
+GROUP BY accounts.AccountNumber; /* group by the account so that SUM is done by accounts rather than overall */
+END//
+
+
+DELIMITER ;
+
+
+
+
+SELECT customers.CustomerID, customers.FirstName, customers.LastName, accounts.AccountNumber, (SUM(transactions.Amount)+accounts.OpenBalance) AS Balance FROM accounts 
+INNER JOIN transactions ON accounts.AccountNumber = transactions.AccountNumber		/* joins transaction table in order to get transaction details for calculations */
+INNER JOIN customers ON accounts.CustomerID = customers.CustomerID			/* joins customer table in order to get customer details */
+/* where accounts opening balance + SUM transactions > 5000 */
+WHERE 5000 - accounts.OpenBalance < ALL (SELECT SUM(transactions.Amount) FROM transactions GROUP BY transactions.AccountNumber)
+GROUP BY accounts.AccountNumber; /* group by the account so that SUM is done by accounts rather than overall */
+
+/*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+
+
+
+
+
+
+
+/*	Finds loans due first days of month	*/
+USE bank;
+DELIMITER //
+
+CREATE PROCEDURE Due()
+BEGIN
+SELECT StartDate, DAY(StartDate) 'Day Part' FROM Loans
+WHERE DAY(StartDate) = '01' OR
+DAY(StartDate) = '02' OR
+DAY(StartDate) = '03' OR
+DAY(StartDate) = '04' OR
+DAY(StartDate) = '05' OR
+DAY(StartDate) = '06' OR
+DAY(StartDate) = '07';
+END//
+
+
+DELIMITER ;
+
+
+
+
+
+
+
+
+/*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+/*	4.1 - finds customers with loan in first 7 days of month	*/
+USE bank;
+DELIMITER //
+
+CREATE PROCEDURE DueWeekOne()
+BEGIN			/* Selects data */
+SELECT Customers.CustomerID, Customers.FirstName, Customers.LastName, Accounts.AccountNumber
+FROM Customers
+INNER JOIN Accounts ON Accounts.CustomerID = Customers.CustomerID		/* Joins Accounts so account number can be selected */
+INNER JOIN Loans ON Loans.AccountNumber = Accounts.AccountNumber		/* Joins Loans so that StartDate can be used to set condition of loans due on first 7 days */
+/* Condition that day is within first 7 days of month */
+    WHERE DAY(StartDate) = '01' OR
+    DAY(StartDate) = '02' OR
+    DAY(StartDate) = '03' OR
+    DAY(StartDate) = '04' OR
+    DAY(StartDate) = '05' OR
+    DAY(StartDate) = '06' OR
+    DAY(StartDate) = '07';
+END//
+
+
+DELIMITER ;
+
+
+SELECT Customers.CustomerID, Customers.FirstName, Customers.LastName, Accounts.AccountNumber
+FROM Customers
+INNER JOIN Accounts ON Accounts.CustomerID = Customers.CustomerID		/* Joins Accounts so account number can be selected */
+INNER JOIN Loans ON Loans.AccountNumber = Accounts.AccountNumber		/* Joins Loans so that StartDate can be used to set condition of loans due on first 7 days */
+/* Condition that day is within first 7 days of month */
+    WHERE DAY(StartDate) = '01' OR
+    DAY(StartDate) = '02' OR
+    DAY(StartDate) = '03' OR
+    DAY(StartDate) = '04' OR
+    DAY(StartDate) = '05' OR
+    DAY(StartDate) = '06' OR
+    DAY(StartDate) = '07';
+
+
+/*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+
+
+
+
+
+/*	Gets dates within 5 days of current date	*/
+USE bank;
+DELIMITER //
+
+CREATE PROCEDURE AccLastDays()
+BEGIN
+SELECT AccountNumber, Date
+FROM Transactions
+WHERE DATEDIFF(CURRENT_TIMESTAMP(), Date) <= 5 AND Date <= CURRENT_TIMESTAMP();
+END//
+
+
+DELIMITER ;
+
+
+
+
+
+
+/*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+/*	4.2 - get details of all transactions done with last 5 days	*/
+USE bank;
+DELIMITER //
+
+CREATE PROCEDURE InfoLastDaysFive()
+BEGIN				/* Selects data */
+SELECT Customers.CustomerID, Customers.FirstName, Customers.LastName, Accounts.AccountNumber, Transactions.Amount, Transactions.TransactionID, Transactions.Date FROM Customers
+INNER JOIN Accounts ON Accounts.CustomerID = Customers.CustomerID			/* Joins Accounts to access AccountNumber */
+INNER JOIN Transactions ON Transactions.AccountNumber = Accounts.AccountNumber		/* Joins Transactions to access Date */
+WHERE DATEDIFF(CURRENT_TIMESTAMP(), Date) <= 5 AND Date <= CURRENT_TIMESTAMP();		/* Sets condition where Date has to be with 5 days of the current date AND Date can't be in the future */
+END//
+
+
+DELIMITER ;
+
+
+USE bank;
+DELIMITER //
+			/* Allows user to enter number of days they want to output */
+CREATE PROCEDURE InfoLastDays(IN days INT)
+BEGIN				/* Selects data */
+SELECT Customers.CustomerID, Customers.FirstName, Customers.LastName, Accounts.AccountNumber, Transactions.Amount, Transactions.TransactionID, Transactions.Date FROM Customers
+INNER JOIN Accounts ON Accounts.CustomerID = Customers.CustomerID			/* Joins Accounts to access AccountNumber */
+INNER JOIN Transactions ON Transactions.AccountNumber = Accounts.AccountNumber		/* Joins Transactions to access Date */
+WHERE DATEDIFF(CURRENT_TIMESTAMP(), Date) <= days AND Date <= CURRENT_TIMESTAMP();		/* Sets condition where Date has to be within n days of the current date AND Date can't be in the future */
+END//
+
+
+DELIMITER ;
+
+
+SELECT Customers.CustomerID, Customers.FirstName, Customers.LastName, Accounts.AccountNumber, Transactions.Amount, Transactions.TransactionID, Transactions.Date FROM Customers
+INNER JOIN Accounts ON Accounts.CustomerID = Customers.CustomerID			/* Joins Accounts to access AccountNumber */
+INNER JOIN Transactions ON Transactions.AccountNumber = Accounts.AccountNumber		/* Joins Transactions to access Date */
+WHERE DATEDIFF(CURRENT_TIMESTAMP(), Date) <= 5 AND Date <= CURRENT_TIMESTAMP();		/* Sets condition where Date has to be with 5 days of the current date AND Date can't be in the future */
+
+/*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+
